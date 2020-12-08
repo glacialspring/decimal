@@ -25,6 +25,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/globalsign/mgo/bson"
 )
 
 // DivisionPrecision is the number of decimal places in the result when it
@@ -1017,6 +1019,21 @@ func (d Decimal) MarshalJSON() ([]byte, error) {
 		str = "\"" + d.String() + "\""
 	}
 	return []byte(str), nil
+}
+
+func (d Decimal) GetBSON() (interface{}, error) {
+	return bson.ParseDecimal128(Decimal(d).String())
+}
+func (d *Decimal) SetBSON(raw bson.Raw) (err error) {
+	var s string
+	var dec128 bson.Decimal128
+	if err = raw.Unmarshal(&dec128); err == nil {
+		s = dec128.String()
+	} else if err = raw.Unmarshal(&s); err != nil {
+		return err
+	}
+	*d, err = NewFromString(s)
+	return err
 }
 
 // UnmarshalBinary implements the encoding.BinaryUnmarshaler interface. As a string representation
